@@ -2,10 +2,10 @@
 #include <opencv2/opencv.hpp>
 #include <cmath>
 
-// ¸ßË¹ÂË²¨º¯Êı
-// src: ÊäÈëÍ¼Ïñ
-// kernelSize: ¸ßË¹ºË´óĞ¡£¬Í¨³£ÎªÆæÊı
-// sigma: ¸ßË¹ºËµÄ±ê×¼²î
+// é«˜æ–¯æ»¤æ³¢å‡½æ•°
+// src: è¾“å…¥å›¾åƒ
+// kernelSize: é«˜æ–¯æ ¸å¤§å°ï¼Œé€šå¸¸ä¸ºå¥‡æ•°
+// sigma: é«˜æ–¯æ ¸çš„æ ‡å‡†å·®
 cv::Mat gaussianBlur(const cv::Mat& src, int kernelSize, double sigma) 
 {
     cv::Mat blurred;
@@ -13,10 +13,10 @@ cv::Mat gaussianBlur(const cv::Mat& src, int kernelSize, double sigma)
     return blurred;
 }
 
-// SobelËã×Ó¼ÆËãÌİ¶È·ùÖµºÍ·½Ïò
-// src: ÊäÈëÍ¼Ïñ
-// magnitude: Êä³öµÄÌİ¶È·ùÖµ¾ØÕó
-// angle: Êä³öµÄÌİ¶È·½Ïò¾ØÕó£¬µ¥Î»Îª¶È
+// Sobelç®—å­è®¡ç®—æ¢¯åº¦å¹…å€¼å’Œæ–¹å‘
+// src: è¾“å…¥å›¾åƒ
+// magnitude: è¾“å‡ºçš„æ¢¯åº¦å¹…å€¼çŸ©é˜µ
+// angle: è¾“å‡ºçš„æ¢¯åº¦æ–¹å‘çŸ©é˜µï¼Œå•ä½ä¸ºåº¦
 void sobelGradient(const cv::Mat& src, cv::Mat& magnitude, cv::Mat& angle) 
 {
     cv::Mat grad_x, grad_y;
@@ -25,10 +25,11 @@ void sobelGradient(const cv::Mat& src, cv::Mat& magnitude, cv::Mat& angle)
     cv::cartToPolar(grad_x, grad_y, magnitude, angle, true);
 }
 
-// ·Ç¼«´óÖµÒÖÖÆº¯Êı
-// magnitude: Ìİ¶È·ùÖµ¾ØÕó
-// angle: Ìİ¶È·½Ïò¾ØÕó
-cv::Mat nonMaxSuppression(const cv::Mat& magnitude, const cv::Mat& angle) {
+// éæå¤§å€¼æŠ‘åˆ¶å‡½æ•°
+// magnitude: æ¢¯åº¦å¹…å€¼çŸ©é˜µ
+// angle: æ¢¯åº¦æ–¹å‘çŸ©é˜µ
+cv::Mat nonMaxSuppression(const cv::Mat& magnitude, const cv::Mat& angle) 
+{
     cv::Mat suppressed = cv::Mat::zeros(magnitude.size(), CV_32F);
 
     for (int y = 1; y < magnitude.rows - 1; ++y) 
@@ -40,7 +41,7 @@ cv::Mat nonMaxSuppression(const cv::Mat& magnitude, const cv::Mat& angle) {
 
             float mag1 = 0, mag2 = 0;
 
-            // ¸ù¾İÌİ¶È·½ÏòÈ·¶¨ÏàÁÚÏñËØµãµÄÎ»ÖÃ
+            // æ ¹æ®æ¢¯åº¦æ–¹å‘ç¡®å®šç›¸é‚»åƒç´ ç‚¹çš„ä½ç½®
             if ((angleDeg >= 0 && angleDeg < 22.5) || (angleDeg >= 157.5 && angleDeg <= 180) ||
                 (angleDeg >= -180 && angleDeg < -157.5) || (angleDeg >= -22.5 && angleDeg < 0)) 
             {
@@ -63,7 +64,7 @@ cv::Mat nonMaxSuppression(const cv::Mat& magnitude, const cv::Mat& angle) {
                 mag2 = magnitude.at<float>(y + 1, x + 1);
             }
 
-            // ½ö±£Áô¾Ö²¿×î´óÖµµã×÷Îª±ßÔµºòÑ¡
+            // ä»…ä¿ç•™å±€éƒ¨æœ€å¤§å€¼ç‚¹ä½œä¸ºè¾¹ç¼˜å€™é€‰
             if (mag >= mag1 && mag >= mag2) 
             {
                 suppressed.at<float>(y, x) = mag;
@@ -78,39 +79,46 @@ cv::Mat nonMaxSuppression(const cv::Mat& magnitude, const cv::Mat& angle) {
     return suppressed;
 }
 
-// Ë«ãĞÖµ¼ì²âº¯Êı
-// suppressed: ·Ç¼«´óÖµÒÖÖÆºóµÄÍ¼Ïñ
-// lowThresh: µÍãĞÖµ
-// highThresh: ¸ßãĞÖµ
+// åŒé˜ˆå€¼æ£€æµ‹å‡½æ•°
+// suppressed: éæå¤§å€¼æŠ‘åˆ¶åçš„å›¾åƒ
+// lowThresh: ä½é˜ˆå€¼
+// highThresh: é«˜é˜ˆå€¼
 cv::Mat doubleThreshold(const cv::Mat& suppressed, float lowThresh, float highThresh) 
 {
     cv::Mat edges = cv::Mat::zeros(suppressed.size(), CV_8U);
 
     for (int y = 0; y < suppressed.rows; ++y) 
     {
-        for (int x = 0; x < suppressed.cols; ++x) {
+        for (int x = 0; x < suppressed.cols; ++x) 
+        {
             float val = suppressed.at<float>(y, x);
-            if (val >= highThresh) {
-                edges.at<uchar>(y, x) = 255; // Ç¿±ßÔµ
+            if (val >= highThresh) 
+            {
+                edges.at<uchar>(y, x) = 255; // å¼ºè¾¹ç¼˜
             }
-            else if (val >= lowThresh) {
-                edges.at<uchar>(y, x) = 100; // Èõ±ßÔµ
+            else if (val >= lowThresh) 
+            {
+                edges.at<uchar>(y, x) = 100; // å¼±è¾¹ç¼˜
             }
         }
     }
 
-    // ±ßÔµ¸ú×Ù£º½«ÓëÇ¿±ßÔµÏàÁ¬µÄÈõ±ßÔµ±ê¼ÇÎªÇ¿±ßÔµ
+    // è¾¹ç¼˜è·Ÿè¸ªï¼šå°†ä¸å¼ºè¾¹ç¼˜ç›¸è¿çš„å¼±è¾¹ç¼˜æ ‡è®°ä¸ºå¼ºè¾¹ç¼˜
     for (int y = 1; y < edges.rows - 1; ++y) 
     {
-        for (int x = 1; x < edges.cols - 1; ++x) {
-            if (edges.at<uchar>(y, x) == 100) {
+        for (int x = 1; x < edges.cols - 1; ++x) 
+        {
+            if (edges.at<uchar>(y, x) == 100) 
+            {
                 if (edges.at<uchar>(y - 1, x - 1) == 255 || edges.at<uchar>(y - 1, x) == 255 ||
                     edges.at<uchar>(y - 1, x + 1) == 255 || edges.at<uchar>(y, x - 1) == 255 ||
                     edges.at<uchar>(y, x + 1) == 255 || edges.at<uchar>(y + 1, x - 1) == 255 ||
-                    edges.at<uchar>(y + 1, x) == 255 || edges.at<uchar>(y + 1, x + 1) == 255) {
+                    edges.at<uchar>(y + 1, x) == 255 || edges.at<uchar>(y + 1, x + 1) == 255) 
+                {
                     edges.at<uchar>(y, x) = 255;
                 }
-                else {
+                else 
+                {
                     edges.at<uchar>(y, x) = 0;
                 }
             }
@@ -129,30 +137,30 @@ int main()
         return -1;
     }
 
-    // ×ª»»Îª»Ò¶ÈÍ¼
+    // è½¬æ¢ä¸ºç°åº¦å›¾
     cv::Mat gray;
     cv::cvtColor(src, gray, cv::COLOR_BGR2GRAY);
 
-    // ¸ßË¹ÂË²¨
+    // é«˜æ–¯æ»¤æ³¢
     cv::Mat blurred = gaussianBlur(gray, 5, 1.5);
 
-    // SobelËã×Ó¼ÆËãÌİ¶È
+    // Sobelç®—å­è®¡ç®—æ¢¯åº¦
     cv::Mat magnitude, angle;
     sobelGradient(blurred, magnitude, angle);
 
-    // ·Ç¼«´óÖµÒÖÖÆ
+    // éæå¤§å€¼æŠ‘åˆ¶
     cv::Mat suppressed = nonMaxSuppression(magnitude, angle);
 
-    // Ë«ãĞÖµ¼ì²â
+    // åŒé˜ˆå€¼æ£€æµ‹
     cv::Mat edges = doubleThreshold(suppressed, 50, 150);
 
-    // ÏÔÊ¾¸÷¸ö½×¶ÎµÄÍ¼Ïñ
-    cv::imshow("Ô­Ê¼Í¼Ïñ", src);
-    cv::imshow("»Ò¶ÈÍ¼", gray);
-    cv::imshow("¸ßË¹Æ½»¬", blurred);
-    cv::imshow("SobelÌİ¶È", magnitude);
-    cv::imshow("·Ç¼«´óÖµÒÖÖÆ", suppressed);
-    cv::imshow("Canny±ßÔµ¼ì²â½á¹û", edges);
+    // æ˜¾ç¤ºå„ä¸ªé˜¶æ®µçš„å›¾åƒ
+    cv::imshow("åŸå§‹å›¾åƒ", src);
+    cv::imshow("ç°åº¦å›¾", gray);
+    cv::imshow("é«˜æ–¯å¹³æ»‘", blurred);
+    cv::imshow("Sobelæ¢¯åº¦", magnitude);
+    cv::imshow("éæå¤§å€¼æŠ‘åˆ¶", suppressed);
+    cv::imshow("Cannyè¾¹ç¼˜æ£€æµ‹ç»“æœ", edges);
     cv::waitKey(0);
 
     return 0;
